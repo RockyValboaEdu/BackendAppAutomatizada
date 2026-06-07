@@ -1,5 +1,6 @@
 // src/scheduler.js
 const cron = require('node-cron');
+const axios = require('axios');
 const { getPendingNightMessages, markAsSummarized, saveSummary } = require('./services/messageService');
 const { summarizeMessages } = require('./services/aiService');
 
@@ -23,5 +24,12 @@ cron.schedule('30 6 * * *', async () => {
     console.error('❌ Error generando resumen:', err.message);
   }
 }, {
-  timezone: 'America/Bogota' // Tu zona horaria
+  timezone: 'America/Bogota'
+});
+
+// Mantiene Railway activo haciendo un ping cada 10 minutos
+cron.schedule('*/10 * * * *', async () => {
+  try {
+    await axios.get('https://backendappautomatizada-production.up.railway.app/health');
+  } catch (e) {}
 });
