@@ -40,19 +40,17 @@ router.post('/generate', async (req, res) => {
 
 // POST /api/summary/force → genera resumen con TODOS los mensajes no resumidos
 router.post('/force', async (req, res) => {
-  const messages = db.prepare(`
-    SELECT * FROM messages WHERE summarized = 0 ORDER BY platform, received_at ASC
-  `).all();
+  const { getPendingAllMessages, saveSummary, markAsSummarized } = require('../services/messageService');
+  const messages = await getPendingAllMessages();
 
   if (messages.length === 0) {
     return res.json({ message: 'No hay mensajes pendientes.' });
   }
 
   try {
-    const { saveSummary, markAsSummarized } = require('../services/messageService');
     const summary = await summarizeMessages(messages);
-    saveSummary(summary);
-    markAsSummarized(messages.map(m => m.id));
+    await saveSummary(summary);
+    await markAsSummarized(messages.map(m => m.id));
     res.json({ message: '✅ Resumen generado', summary });
   } catch (err) {
     res.status(500).json({ error: err.message });

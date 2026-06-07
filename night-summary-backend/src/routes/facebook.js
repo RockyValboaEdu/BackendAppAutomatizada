@@ -42,21 +42,18 @@ router.post('/', (req, res) => {
 
   if (body.object !== 'page' && body.object !== 'instagram') return res.sendStatus(404);
 
-  body.entry?.forEach(entry => {
-    entry.messaging?.forEach(async (event) => {
-      if (!event.message || event.message.is_echo) return;
+  entry.messaging?.forEach(async (event) => {
+  if (!event.message || event.message.is_echo) return;
 
-      const platform = body.object === 'instagram' ? 'instagram' : 'facebook';
-      const sender_name = await getSenderName(event.sender.id);
+  const platform = body.object === 'instagram' ? 'instagram' : 'facebook';
 
-      saveMessage({
-        platform,
-        sender_id:   event.sender.id,
-        sender_name: getFriendlySenderName(platform, event.sender.id),
-        content:     event.message.text || '[mensaje sin texto]'
-      });
-    });
+  await saveMessage({
+    platform,
+    sender_id:   event.sender.id,
+    sender_name: getFriendlySenderName(platform, event.sender.id),
+    content:     event.message.text || '[mensaje sin texto]'
   });
+});
 
   res.sendStatus(200);
 });
