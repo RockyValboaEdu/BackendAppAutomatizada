@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { getLatestSummary, getPendingNightMessages } = require('../services/messageService');
 const { summarizeMessages } = require('../services/aiService');
+const db = require('../db/database');
 
 // GET /api/summary → devuelve el resumen más reciente
 router.get('/', (req, res) => {
@@ -24,6 +25,27 @@ router.post('/generate', async (req, res) => {
 
   if (messages.length === 0) {
     return res.json({ message: 'No hay mensajes nocturnos pendientes.' });
+  }
+
+  try {
+    const { saveSummary, markAsSummarized } = require('../services/messageService');
+    const summary = await summarizeMessages(messages);
+    saveSummary(summary);
+    markAsSummarized(messages.map(m => m.id));
+    res.json({ message: '✅ Resumen generado', summary });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/summary/force → genera resumen con TODOS los mensajes no resumidos
+router.post('/force', async (req, res) => {
+  const messages = db.prepare(`
+    SELECT * FROM messages WHERE summarized = 0 ORDER BY platform, received_at ASC
+  `).all();
+
+  if (messages.length === 0) {
+    return res.json({ message: 'No hay mensajes pendientes.' });
   }
 
   try {
